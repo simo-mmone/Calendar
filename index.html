@@ -1,166 +1,182 @@
-<div id="calendar-month">
-    <div id="calendar-month-prev"><</div>
-    <div id="calendar-month-name"></div>
-    <div id="calendar-month-next">></div>
-</div>
-<div id="calendar"></div>
+<html>
 
-<style>
-    #calendar-month{
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        margin: 20px;
-    }
-    #calendar-month-prev,
-    #calendar-month-next{
-        cursor: pointer;
-    }
-    .week {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-    }
-    .week.mobile{
-        display: none;
-    }
-    .weekday {
-        width: calc(100% / 7);
-        height: 90px;
-        border: 1px solid black;
-        text-align: center;
-        font-weight: bold;
-        display: flex;
-        flex-direction: column;
-        justify-content: start;
-        padding: 10px;
-    }
+    <head>
+        <meta name="viewport" content="width=device-width">
+    </head>
 
-    @media screen and (max-width: 1040px) {
-        .weekday {
-            /* border: none; */
-            height: 50px;
-            justify-content: center;
-            padding: 0;
-        }
-        .week.desktop{
-            display: none;
-        }
-        .week.mobile{
-            display: flex;
-        }
-    }
-</style>
+    <body>
+        <div id="calendar-month">
+            <div id="calendar-month-prev">←</div>
+            <div id="calendar-month-name"></div>
+            <div id="calendar-month-next">→</div>
+        </div>
+        <div id="calendar"></div>
 
-<script>
-    function daysInThisMonth(now = new Date()) {
-        return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    }
+        <style>
+            #calendar-month {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                margin: 20px;
+            }
 
-    function increaseMonth(month, year) {
-        if (month === 11) {
-            month = 0;
-            year++;
-        } else {
-            month++;
-        }
-        return [month, year];
-    }
+            #calendar-month-prev,
+            #calendar-month-next {
+                cursor: pointer;
+            }
 
-    function decreaseMonth(month, year) {
-        if (month === 0) {
-            month = 11;
-            year--;
-        } else {
-            month--;
-        }
-        return [month, year];
-    }
+            .week {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+            }
 
-    function indexToWeekday(index, weekdays) {
-        return (index+1)%7;
-    }
+            .week.mobile {
+                display: none;
+            }
 
-    function updateShownMonth(month, year) {
-        let htmlMonthName = document.getElementById("calendar-month-name");
-        htmlMonthName.innerHTML = `${month+1}/${year}`;
-    }
+            .weekday {
+                width: calc(100% / 7);
+                height: 90px;
+                border: 1px solid black;
+                text-align: center;
+                font-weight: bold;
+                display: flex;
+                flex-direction: column;
+                justify-content: start;
+                padding: 10px;
+            }
 
-    function changeMonth(month, year, direction) {
-        if (direction === "next") {
-            [new_month, new_year] = increaseMonth(month, year);
-        } else if (direction === "prev") {
-            [new_month, new_year] = decreaseMonth(month, year);
-        }
-        updateShownMonth(new_month, new_year);
-        let htmlCalendar = document.getElementById("calendar");
-        htmlCalendar.innerHTML = printCalendar(new_month, new_year);
-        return [new_month, new_year];
-    }
+            @media screen and (max-width: 1040px) {
+                .weekday {
+                    /* border: none; */
+                    height: 50px;
+                    justify-content: center;
+                    padding: 0;
+                }
 
-    function printWeekdays(weekdays) {
-        let html = "";
-        // start from monday
-        let weekdaysindex = 1;
-        html += `<div class="week desktop">`;
-        for (let i = 0; i < 7; i++) {
-            html += `<div class="weekday name">${weekdays[weekdaysindex++%7]}</div>`;
-        }
-        html += `</div>`;
-        weekdaysindex = 1;
-        html += `<div class="week mobile">`;
-        for (let i = 0; i < 7; i++) {
-            html += `<div class="weekday name">${weekdays[weekdaysindex++%7].charAt(0)}</div>`;
-        }
-        html += `</div>`;
-        return html;
-    }
+                .week.desktop {
+                    display: none;
+                }
 
-    function printCalendar(month, year) {
-        let html = "";
-        let daysInMonth = daysInThisMonth(new Date(year, month));
-        let weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        let dayIndex = 0;
-        
-        html += printWeekdays(weekdays);
+                .week.mobile {
+                    display: flex;
+                }
+            }
+        </style>
 
-        // print days week by week
-        html += `<div class="week">`;
-        for (let i = 0; (dayIndex < daysInMonth || i % 7 != 0); i++) {
-            if (i % 7 === 0 && i !== 0) {
+        <script>
+            function daysInThisMonth(now = new Date()) {
+                return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            }
+
+            function increaseMonth(month, year) {
+                if (month === 11) {
+                    month = 0;
+                    year++;
+                } else {
+                    month++;
+                }
+                return [month, year];
+            }
+
+            function decreaseMonth(month, year) {
+                if (month === 0) {
+                    month = 11;
+                    year--;
+                } else {
+                    month--;
+                }
+                return [month, year];
+            }
+
+            function indexToWeekday(index, weekdays) {
+                return (index + 1) % 7;
+            }
+
+            function updateShownMonth(month, year) {
+                let htmlMonthName = document.getElementById("calendar-month-name");
+                htmlMonthName.innerHTML = `${month + 1}/${year}`;
+            }
+
+            function changeMonth(month, year, direction) {
+                if (direction === "next") {
+                    [new_month, new_year] = increaseMonth(month, year);
+                } else if (direction === "prev") {
+                    [new_month, new_year] = decreaseMonth(month, year);
+                }
+                updateShownMonth(new_month, new_year);
+                let htmlCalendar = document.getElementById("calendar");
+                htmlCalendar.innerHTML = printCalendar(new_month, new_year);
+                return [new_month, new_year];
+            }
+
+            function printWeekdays(weekdays) {
+                let html = "";
+                // start from monday
+                let weekdaysindex = 1;
+                html += `<div class="week desktop">`;
+                for (let i = 0; i < 7; i++) {
+                    html += `<div class="weekday name">${weekdays[weekdaysindex++ % 7]}</div>`;
+                }
                 html += `</div>`;
+                weekdaysindex = 1;
+                html += `<div class="week mobile">`;
+                for (let i = 0; i < 7; i++) {
+                    html += `<div class="weekday name">${weekdays[weekdaysindex++ % 7].charAt(0)}</div>`;
+                }
+                html += `</div>`;
+                return html;
+            }
+
+            function printCalendar(month, year) {
+                let html = "";
+                let daysInMonth = daysInThisMonth(new Date(year, month));
+                let weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                let dayIndex = 0;
+
+                html += printWeekdays(weekdays);
+
+                // print days week by week
                 html += `<div class="week">`;
+                for (let i = 0; (dayIndex < daysInMonth || i % 7 != 0); i++) {
+                    if (i % 7 === 0 && i !== 0) {
+                        html += `</div>`;
+                        html += `<div class="week">`;
+                    }
+
+                    html += `<div class="weekday">`;
+                    let weekday = new Date(year, month, (dayIndex + 1)).getDay();
+                    // console.log(dayIndex, weekday, indexToWeekday(i, weekdays));
+                    if (weekday == indexToWeekday(i, weekdays) && dayIndex < daysInMonth) {
+                        html += `${++dayIndex}`;
+                    }
+                    html += `</div>`;
+
+
+                }
+                html += `</div>`;
+                return html;
             }
 
-            html += `<div class="weekday">`;
-            let weekday = new Date(year, month, (dayIndex + 1)).getDay();
-            // console.log(dayIndex, weekday, indexToWeekday(i, weekdays));
-            if (weekday == indexToWeekday(i, weekdays) && dayIndex < daysInMonth) {
-                html += `${++dayIndex}`;
-            }
-            html += `</div>`;
+            // init month and year as current month and year
+            let month = new Date().getMonth();
+            let year = new Date().getFullYear();
+            updateShownMonth(month, year);
+
+            // show calendar
+            let htmlCalendar = document.getElementById("calendar");
+            htmlCalendar.innerHTML = printCalendar(month, year);
+
+            // add event listeners
+            let htmlPrev = document.getElementById("calendar-month-prev");
+            htmlPrev.addEventListener("click", () => [month, year] = changeMonth(month, year, "prev"));
+            let htmlNext = document.getElementById("calendar-month-next");
+            htmlNext.addEventListener("click", () => [month, year] = changeMonth(month, year, "next"));
 
 
-        }
-        html += `</div>`;
-        return html;
-    }
+        </script>
+    </body>
 
-    // init month and year as current month and year
-    let month = new Date().getMonth();
-    let year = new Date().getFullYear();
-    updateShownMonth(month, year);
-
-    // show calendar
-    let htmlCalendar = document.getElementById("calendar");
-    htmlCalendar.innerHTML = printCalendar(month, year);
-
-    // add event listeners
-    let htmlPrev = document.getElementById("calendar-month-prev");
-    htmlPrev.addEventListener("click", () => [month, year] = changeMonth(month, year, "prev"));
-    let htmlNext = document.getElementById("calendar-month-next");
-    htmlNext.addEventListener("click", () => [month, year] = changeMonth(month, year, "next"));
-    
-
-</script>
+</html>
