@@ -155,10 +155,8 @@
             let htmlCalendar = document.getElementById("calendar");
             htmlCalendar.innerHTML = printCalendar(new_month, new_year);
 
-            // showOffers(new_month, new_year, offers);
-            getAllOffers(month, year).then(data => {
-                showOffers(month, year, data);
-            });
+            if (offers.length > 0)
+                showOffers(new_month, new_year, offers);
 
             return [new_month, new_year];
         }
@@ -182,8 +180,9 @@
         }
 
         function showOffers(month, year, offers) {
-            const dateToCheck = new Date(year, month - 1); // Month is zero-based
-            const daysInMonth = new Date(year, month, 0).getDate();
+            // console.log("showOffers", month, year, offers);
+            const dateToCheck = new Date(year, month); // Month is zero-based
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
             for (let day = 1; day <= daysInMonth; day++) {
                 dateToCheck.setDate(day);
@@ -244,20 +243,22 @@
         // init month and year as current month and year
         let month = new Date().getMonth();
         let year = new Date().getFullYear();
+        let offers = [];
         updateShownMonth(month, year);
 
         // show calendar
         let htmlCalendar = document.getElementById("calendar");
         htmlCalendar.innerHTML = printCalendar(month, year);
         getAllOffers(month, year).then(data => {
+            offers = data;
             showOffers(month, year, data);
         });
 
         // add event listeners
         let htmlPrev = document.getElementById("calendar-month-prev");
-        htmlPrev.addEventListener("click", () => [month, year] = changeMonth(month, year, "prev"));
+        htmlPrev.addEventListener("click", () => [month, year] = changeMonth(month, year, "prev", offers));
         let htmlNext = document.getElementById("calendar-month-next");
-        htmlNext.addEventListener("click", () => [month, year] = changeMonth(month, year, "next"));
+        htmlNext.addEventListener("click", () => [month, year] = changeMonth(month, year, "next", offers));
 
 
     </script>
