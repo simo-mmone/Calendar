@@ -1,182 +1,258 @@
 <html>
 
-    <head>
-        <meta name="viewport" content="width=device-width">
-    </head>
+<head>
+    <meta name="viewport" content="width=device-width">
+</head>
 
-    <body>
-        <div id="calendar-month">
-            <div id="calendar-month-prev">←</div>
-            <div id="calendar-month-name"></div>
-            <div id="calendar-month-next">→</div>
-        </div>
-        <div id="calendar"></div>
+<body>
+    <div id="calendar-month">
+        <div id="calendar-month-prev">←</div>
+        <div id="calendar-month-name"></div>
+        <div id="calendar-month-next">→</div>
+    </div>
+    <div id="calendar"></div>
 
-        <style>
-            #calendar-month {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-                margin: 20px;
+    <style>
+        #calendar-month {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px;
+        }
+
+        #calendar-month-prev,
+        #calendar-month-next {
+            cursor: pointer;
+        }
+
+        .week {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .week.mobile {
+            display: none;
+        }
+
+        .weekday {
+            width: calc(100% / 7);
+            height: 90px;
+            border: 1px solid black;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            justify-content: start;
+            padding: 10px;
+        }
+
+        @media screen and (max-width: 1040px) {
+            .weekday {
+                /* border: none; */
+                height: 50px;
+                justify-content: center;
+                padding: 0;
             }
 
-            #calendar-month-prev,
-            #calendar-month-next {
-                cursor: pointer;
-            }
-
-            .week {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-            }
-
-            .week.mobile {
+            .week.desktop {
                 display: none;
             }
 
-            .weekday {
-                width: calc(100% / 7);
-                height: 90px;
-                border: 1px solid black;
-                text-align: center;
-                font-weight: bold;
+            .week.mobile {
                 display: flex;
-                flex-direction: column;
-                justify-content: start;
-                padding: 10px;
             }
+        }
+    </style>
 
-            @media screen and (max-width: 1040px) {
-                .weekday {
-                    /* border: none; */
-                    height: 50px;
-                    justify-content: center;
-                    padding: 0;
-                }
+    <script>
 
-                .week.desktop {
-                    display: none;
-                }
+        const configs = {
+            'host': 'https://volpe.abs-one.com',
+            'structureId': 6,
+            'portalId': 1
+        };
 
-                .week.mobile {
-                    display: flex;
-                }
+        function daysInThisMonth(now = new Date()) {
+            return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        }
+
+        function increaseMonth(month, year) {
+            if (month === 11) {
+                month = 0;
+                year++;
+            } else {
+                month++;
             }
-        </style>
+            return [month, year];
+        }
 
-        <script>
-            function daysInThisMonth(now = new Date()) {
-                return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        function decreaseMonth(month, year) {
+            if (month === 0) {
+                month = 11;
+                year--;
+            } else {
+                month--;
             }
+            return [month, year];
+        }
 
-            function increaseMonth(month, year) {
-                if (month === 11) {
-                    month = 0;
-                    year++;
-                } else {
-                    month++;
-                }
-                return [month, year];
+        function indexToWeekday(index, weekdays) {
+            return (index + 1) % 7;
+        }
+
+        function updateShownMonth(month, year) {
+            let htmlMonthName = document.getElementById("calendar-month-name");
+            htmlMonthName.innerHTML = `${month + 1}/${year}`;
+        }        
+
+        async function getAllOffers(month, year) {
+
+            let results = [];
+
+            const startDate = new Date(year, month, 1);
+            const endDate = new Date(year, month + 1, 0);
+            const now = Date.now();
+
+            // Create a new Headers object and set multiple headers
+            const headers = new Headers();
+            headers.append('StructureId', configs.structureId);
+            headers.append('PortalId', configs.portalId);
+            // headers.append('UserLanguageCode', 'it');
+
+            // Create the fetch options
+            const requestOptions = {
+            method: 'GET',
+            headers: headers,
+            };
+
+            // Make the fetch GET request with multiple headers
+            const resp = await fetch(`${configs.host}/RESTfulAPI/booking/offers`, requestOptions);
+            if (!resp.ok) {
+                console.log(`HTTP error! Status: ${resp.status}`);
+                return [];
             }
+            const data = await resp.json();
+            return JSON.parse(data);
+        }
 
-            function decreaseMonth(month, year) {
-                if (month === 0) {
-                    month = 11;
-                    year--;
-                } else {
-                    month--;
-                }
-                return [month, year];
+        function changeMonth(month, year, direction, offers = []) {
+            if (direction === "next") {
+                [new_month, new_year] = increaseMonth(month, year, offers);
+            } else if (direction === "prev") {
+                [new_month, new_year] = decreaseMonth(month, year, offers);
             }
-
-            function indexToWeekday(index, weekdays) {
-                return (index + 1) % 7;
-            }
-
-            function updateShownMonth(month, year) {
-                let htmlMonthName = document.getElementById("calendar-month-name");
-                htmlMonthName.innerHTML = `${month + 1}/${year}`;
-            }
-
-            function changeMonth(month, year, direction) {
-                if (direction === "next") {
-                    [new_month, new_year] = increaseMonth(month, year);
-                } else if (direction === "prev") {
-                    [new_month, new_year] = decreaseMonth(month, year);
-                }
-                updateShownMonth(new_month, new_year);
-                let htmlCalendar = document.getElementById("calendar");
-                htmlCalendar.innerHTML = printCalendar(new_month, new_year);
-                return [new_month, new_year];
-            }
-
-            function printWeekdays(weekdays) {
-                let html = "";
-                // start from monday
-                let weekdaysindex = 1;
-                html += `<div class="week desktop">`;
-                for (let i = 0; i < 7; i++) {
-                    html += `<div class="weekday name">${weekdays[weekdaysindex++ % 7]}</div>`;
-                }
-                html += `</div>`;
-                weekdaysindex = 1;
-                html += `<div class="week mobile">`;
-                for (let i = 0; i < 7; i++) {
-                    html += `<div class="weekday name">${weekdays[weekdaysindex++ % 7].charAt(0)}</div>`;
-                }
-                html += `</div>`;
-                return html;
-            }
-
-            function printCalendar(month, year) {
-                let html = "";
-                let daysInMonth = daysInThisMonth(new Date(year, month));
-                let weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                let dayIndex = 0;
-
-                html += printWeekdays(weekdays);
-
-                // print days week by week
-                html += `<div class="week">`;
-                for (let i = 0; (dayIndex < daysInMonth || i % 7 != 0); i++) {
-                    if (i % 7 === 0 && i !== 0) {
-                        html += `</div>`;
-                        html += `<div class="week">`;
-                    }
-
-                    html += `<div class="weekday">`;
-                    let weekday = new Date(year, month, (dayIndex + 1)).getDay();
-                    // console.log(dayIndex, weekday, indexToWeekday(i, weekdays));
-                    if (weekday == indexToWeekday(i, weekdays) && dayIndex < daysInMonth) {
-                        html += `${++dayIndex}`;
-                    }
-                    html += `</div>`;
-
-
-                }
-                html += `</div>`;
-                return html;
-            }
-
-            // init month and year as current month and year
-            let month = new Date().getMonth();
-            let year = new Date().getFullYear();
-            updateShownMonth(month, year);
-
-            // show calendar
+            updateShownMonth(new_month, new_year);
             let htmlCalendar = document.getElementById("calendar");
-            htmlCalendar.innerHTML = printCalendar(month, year);
+            htmlCalendar.innerHTML = printCalendar(new_month, new_year);
 
-            // add event listeners
-            let htmlPrev = document.getElementById("calendar-month-prev");
-            htmlPrev.addEventListener("click", () => [month, year] = changeMonth(month, year, "prev"));
-            let htmlNext = document.getElementById("calendar-month-next");
-            htmlNext.addEventListener("click", () => [month, year] = changeMonth(month, year, "next"));
+            // showOffers(new_month, new_year, offers);
+            getAllOffers(month, year).then(data => {
+                showOffers(month, year, data);
+            });
+
+            return [new_month, new_year];
+        }
+
+        function printWeekdays(weekdays) {
+            let html = "";
+            // start from monday
+            let weekdaysindex = 1;
+            html += `<div class="week desktop">`;
+            for (let i = 0; i < 7; i++) {
+                html += `<div class="weekday name">${weekdays[weekdaysindex++ % 7]}</div>`;
+            }
+            html += `</div>`;
+            weekdaysindex = 1;
+            html += `<div class="week mobile">`;
+            for (let i = 0; i < 7; i++) {
+                html += `<div class="weekday name">${weekdays[weekdaysindex++ % 7].charAt(0)}</div>`;
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        function showOffers(month, year, offers) {
+            const dateToCheck = new Date(year, month - 1); // Month is zero-based
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                dateToCheck.setDate(day);
+                const activeObjects = offers.filter(obj => {
+                    const startDate = new Date(obj.validityStart);
+                    const endDate = new Date(obj.validityEnd);
+
+                    // Check if dateToCheck is between startDate and endDate
+                    return startDate <= dateToCheck && dateToCheck <= endDate;
+                });
+
+                if (activeObjects.length > 0) {
+                    for (let i = 0; i < activeObjects.length; i++) {
+                        const offer = activeObjects[i];
+                        const htmlDay = document.getElementsByClassName(`day-${day}`);
+                        const offerName = offer.name.length > 50 ? offer.name.substring(0, 50) + "..." : offer.name;
+                        htmlDay[0].classList.add("has-offer");
+                        htmlDay[0].innerHTML += `<div class="offer">${offerName}</div>`;
+                    }
+                }
+            }
+        }
+
+        function printCalendar(month, year) {
+            let html = "";
+            let daysInMonth = daysInThisMonth(new Date(year, month));
+            let weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            let dayIndex = 0;
+            const dateToCheck = new Date(year, month - 1);
+
+            html += printWeekdays(weekdays);
+
+            // print days week by week
+            html += `<div class="week">`;
+            for (let i = 0; (dayIndex < daysInMonth || i % 7 != 0); i++) {
+                if (i % 7 === 0 && i !== 0) {
+                    html += `</div>`;
+                    html += `<div class="week">`;
+                }
+
+                let weekday = new Date(year, month, (dayIndex + 1)).getDay();
+                let printDay = (weekday == indexToWeekday(i, weekdays) && dayIndex < daysInMonth);
+                let newDayIndex = printDay ? dayIndex + 1 : dayIndex;
+
+                html += `<div class="weekday ${printDay ? 'day day-' + newDayIndex : ''}">`;
+                // console.log(dayIndex, weekday, indexToWeekday(i, weekdays));
+                if (printDay) {
+                    html += `${++dayIndex}`;
+                }
+                html += `</div>`;
 
 
-        </script>
-    </body>
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        // init month and year as current month and year
+        let month = new Date().getMonth();
+        let year = new Date().getFullYear();
+        updateShownMonth(month, year);
+
+        // show calendar
+        let htmlCalendar = document.getElementById("calendar");
+        htmlCalendar.innerHTML = printCalendar(month, year);
+        getAllOffers(month, year).then(data => {
+            showOffers(month, year, data);
+        });
+
+        // add event listeners
+        let htmlPrev = document.getElementById("calendar-month-prev");
+        htmlPrev.addEventListener("click", () => [month, year] = changeMonth(month, year, "prev"));
+        let htmlNext = document.getElementById("calendar-month-next");
+        htmlNext.addEventListener("click", () => [month, year] = changeMonth(month, year, "next"));
+
+
+    </script>
+</body>
 
 </html>
