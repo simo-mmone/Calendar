@@ -48,6 +48,33 @@
             padding: 10px;
         }
 
+        .week .day .number{
+            font-size: small;
+            color: #212121;
+        }
+
+        .week .day .offer .link{
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            gap: 10px;
+        }
+
+        .week .day .offer .link .name {
+            font-weight: bold;
+            color: #212121;
+        }
+
+        .week .day .offer .info {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 20px;
+            font-size: small;
+            color: #424242;
+        }
+
         @media screen and (max-width: 1040px) {
             .weekday {
                 /* border: none; */
@@ -77,10 +104,27 @@
     <script>
 
         const configs = {
+            'booking': 'https://volpe.abs-one.com/metis',
             'host': 'https://volpe.abs-one.com',
+            'language': 'it',
             'structureId': 6,
-            'portalId': 1
+            'portalId': 1,
+            'offerId': 1294,
+            'offerName': 'Blue Days'
         };
+
+        function findGetParameter(parameterName) {
+            var result = null,
+                tmp = [];
+            location.search
+                .substr(1)
+                .split("&")
+                .forEach(function (item) {
+                tmp = item.split("=");
+                if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+                });
+            return result;
+        }
 
         function daysInThisMonth(now = new Date()) {
             return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -115,7 +159,7 @@
             htmlMonthName.innerHTML = `${month + 1}/${year}`;
         }        
 
-        async function getAllOffers(month, year) {
+        async function getAllOffers(month, year, offerId) {
 
             let results = [];
 
@@ -127,6 +171,7 @@
             const headers = new Headers();
             headers.append('StructureId', configs.structureId);
             headers.append('PortalId', configs.portalId);
+            headers.append('offer', offerId);
             // headers.append('UserLanguageCode', 'it');
 
             // Create the fetch options
@@ -145,7 +190,7 @@
             return JSON.parse(data);
         }
 
-        function changeMonth(month, year, direction, offers = []) {
+        function changeMonth(month, year, direction, offers = [], offerToShow = 0, offerName = "") {
             if (direction === "next") {
                 [new_month, new_year] = increaseMonth(month, year, offers);
             } else if (direction === "prev") {
@@ -155,8 +200,7 @@
             let htmlCalendar = document.getElementById("calendar");
             htmlCalendar.innerHTML = printCalendar(new_month, new_year);
 
-            if (offers.length > 0)
-                showOffers(new_month, new_year, offers);
+            showOffers(new_month, new_year, offers, offerToShow, offerName);
 
             return [new_month, new_year];
         }
@@ -167,42 +211,134 @@
             let weekdaysindex = 1;
             html += `<div class="week desktop">`;
             for (let i = 0; i < 7; i++) {
-                html += `<div class="weekday name">${weekdays[weekdaysindex++ % 7]}</div>`;
+                html += `
+                    <div class="weekday name">
+                        ${weekdays[weekdaysindex++ % 7]}
+                    </div>
+                `;
             }
             html += `</div>`;
             weekdaysindex = 1;
             html += `<div class="week mobile">`;
             for (let i = 0; i < 7; i++) {
-                html += `<div class="weekday name">${weekdays[weekdaysindex++ % 7].charAt(0)}</div>`;
+                html += `
+                    <div class="weekday name">
+                        ${weekdays[weekdaysindex++ % 7].charAt(0)}
+                    </div>
+                `;
             }
             html += `</div>`;
             return html;
         }
 
-        function showOffers(month, year, offers) {
+        function showOffers(month, year, offers, requestedOffer, offerName) {
             // console.log("showOffers", month, year, offers);
             const dateToCheck = new Date(year, month); // Month is zero-based
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
             for (let day = 1; day <= daysInMonth; day++) {
                 dateToCheck.setDate(day);
-                const activeObjects = offers.filter(obj => {
-                    const startDate = new Date(obj.validityStart);
-                    const endDate = new Date(obj.validityEnd);
 
-                    // Check if dateToCheck is between startDate and endDate
-                    return startDate <= dateToCheck && dateToCheck <= endDate;
-                });
+                //format date as YYYY-MM-DD
+                const date = dateToCheck.toISOString().slice(0, 10);
+                // console.log("date", date);
+                if (offers[date]){
+                    const offerDate = offers[date];
+                    const htmlDay = document.getElementsByClassName(`day-${day}`);
+                    htmlDay[0].classList.add("has-offer");
 
-                if (activeObjects.length > 0) {
-                    for (let i = 0; i < activeObjects.length; i++) {
-                        const offer = activeObjects[i];
-                        const htmlDay = document.getElementsByClassName(`day-${day}`);
-                        const offerName = offer.name.length > 50 ? offer.name.substring(0, 50) + "..." : offer.name;
-                        htmlDay[0].classList.add("has-offer");
-                        htmlDay[0].innerHTML += `<div class="offer">${offerName}</div>`;
+                    let minStay = 0;
+                    let minPrice = 0;
+                    for (let offerRoom in offerDate) {
+                        minStay = offerDate[offerRoom].min[0];
+                        for (let price in offerDate[offerRoom].prices) {
+                            // console.log("price", offerDate[offerRoom].prices[price]);
+                            minPrice = offerDate[offerRoom].prices[price];
+                            break;
+                        }
+                        break;
                     }
+                    // console.log("offerDate", minStay);
+                    $hrefLink = '';
+
+                    // htmlDay[0].innerHTML += `offer`;
+                    htmlDay[0].innerHTML += `
+                        <div class="offer">
+                            <a target="_blank" class="link" ${$hrefLink}">
+                                <div class="price">
+                                    ${minPrice} €
+                                </div>
+                                <div class="minstay">
+                                    min. ${minStay} nights
+                                </div>
+                                <div class="name">
+                                    ${offerName}
+                                </div>
+                            </a>
+                        </div>
+                    `;
                 }
+
+                // const activeObjects = offers.filter(obj => {
+                //     const startDate = new Date(obj.validityStart);
+                //     const endDate = new Date(obj.validityEnd);
+
+                //     // TODO: check if offer is visible today?
+
+                //     // Check if dateToCheck is between startDate and endDate
+                //     return startDate <= dateToCheck && dateToCheck <= endDate && obj.id == requestedOffer;
+                // });
+
+                // if (activeObjects.length > 0) {
+                //     for (let i = 0; i < activeObjects.length; i++) {
+                //         const offer = activeObjects[i];
+                //         const shownOfferName = offerName != null ? offerName : offer.name;
+                //         const offerMinStay = offer.minstay;
+                //         const htmlDay = document.getElementsByClassName(`day-${day}`);
+                //         const isDateInPast = dateToCheck < new Date();
+
+                //         const shownDay = day;
+                //         const shownDayWithZero = shownDay < 10 ? "0" + shownDay : shownDay;
+                //         const shownMonth = month + 1;
+                //         const shownMonthWithZero = shownMonth < 10 ? "0" + shownMonth : shownMonth;
+
+                //         const daysToAdd = offerMinStay ? parseInt(offerMinStay) : 1;
+                //         const nextDay = (day + daysToAdd) % daysInMonth;
+                //         const hasGoneToNextMonth = nextDay != (day + daysToAdd);
+                //         const shownNextDayWithZero = nextDay < 10 ? "0" + nextDay : nextDay;
+                //         const nextDayMonth = hasGoneToNextMonth ? (shownMonth + 1) % 12 : shownMonth;
+                //         const shownNextDayMonthWithZero = nextDayMonth < 10 ? "0" + nextDayMonth : nextDayMonth;
+                //         const nextDayYear = nextDayMonth < month ? year + 1 : year;
+
+                //         const nextDayWithZero = nextDay < 10 ? "0" + nextDay : nextDay;
+                //         const nextDayMonthWithZero = nextDayMonth < 10 ? "0" + nextDayMonth : nextDayMonth;
+
+                //         //compose link
+                //         //https://volpe.abs-one.com/metis/indexabs.php?checkin=20-03-2023&checkout=21-03-2023&stid=6&lg=it&booking_type=R&step2=1&offerid=1294&hdr=1&ftr=1&style=https%3A%2F%2Fssl.marcovolpe.com%2Fcss%2Fhotel-atlantic.com-it.css&showmode=minisite&bform%5BreqRooms%5D%5B1%5D%5Badults%5D=2&bform%5BreqRooms%5D%5B1%5D%5Bchild%5D=0&numRooms=1
+                //         const dateCheckin = `${shownDayWithZero}-${shownMonthWithZero}-${year}`;
+                //         const dateCheckout = `${shownNextDayWithZero}-${shownNextDayMonthWithZero}-${nextDayYear}`;
+                //         const link = `${configs.booking}/indexabs.php?checkin=${dateCheckin}&checkout=${dateCheckout}&stid=${configs.structureId}&lg=${configs.language}&booking_type=R&step2=1&offerid=${offer.id}&hdr=1&ftr=1&style=https%3A%2F%2Fssl.marcovolpe.com%2Fcss%2Fhotel-atlantic.com-it.css&showmode=minisite&bform%5BreqRooms%5D%5B1%5D%5Badults%5D=2&bform%5BreqRooms%5D%5B1%5D%5Bchild%5D=0&numRooms=1&mobileoffertype=M`;
+
+                //         $hrefLink = isDateInPast ? '' : `href="${link}"`;
+
+                //         htmlDay[0].classList.add("has-offer");
+                //         htmlDay[0].innerHTML += `
+                //             <div class="offer">
+                //                 <a target="_blank" class="link" ${$hrefLink}">
+                //                     <div class="price">
+                //                         ${offer.price_from} €
+                //                     </div>
+                //                     <div class="minstay">
+                //                         min. ${offerMinStay} 
+                //                     </div>
+                //                     <div class="name">
+                //                         ${shownOfferName}
+                //                     </div>
+                //                 </a>
+                //             </div>
+                //         `;
+                //     }
+                // }
             }
         }
 
@@ -230,7 +366,11 @@
                 html += `<div class="weekday ${printDay ? 'day day-' + newDayIndex : ''}">`;
                 // console.log(dayIndex, weekday, indexToWeekday(i, weekdays));
                 if (printDay) {
-                    html += `${++dayIndex}`;
+                    html += `
+                        <div class='number'>
+                            ${++dayIndex}
+                        </div>
+                    `;
                 }
                 html += `</div>`;
 
@@ -240,6 +380,8 @@
             return html;
         }
 
+        const offerToShow = configs.offerId;
+        const offerName = configs.offerName;
         // init month and year as current month and year
         let month = new Date().getMonth();
         let year = new Date().getFullYear();
@@ -249,16 +391,17 @@
         // show calendar
         let htmlCalendar = document.getElementById("calendar");
         htmlCalendar.innerHTML = printCalendar(month, year);
-        getAllOffers(month, year).then(data => {
+        getAllOffers(month, year, offerToShow).then(data => {
             offers = data;
-            showOffers(month, year, data);
+            // console.log(offers);
+            showOffers(month, year, data, offerToShow, offerName);
         });
 
         // add event listeners
         let htmlPrev = document.getElementById("calendar-month-prev");
-        htmlPrev.addEventListener("click", () => [month, year] = changeMonth(month, year, "prev", offers));
+        htmlPrev.addEventListener("click", () => [month, year] = changeMonth(month, year, "prev", offers, offerToShow, offerName));
         let htmlNext = document.getElementById("calendar-month-next");
-        htmlNext.addEventListener("click", () => [month, year] = changeMonth(month, year, "next", offers));
+        htmlNext.addEventListener("click", () => [month, year] = changeMonth(month, year, "next", offers, offerToShow, offerName));
 
 
     </script>
