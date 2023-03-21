@@ -5,6 +5,14 @@
 </head>
 
 <body>
+    <div id="guests">
+        <form id="searchForm">
+            <div id="roomsContainer"></div>
+        </form>
+        <button type="button" onclick="addRoom()">Add Room</button>
+        <button type="button" onclick="removeRoom()">Remove Room</button>
+        <button type="button" onclick="search()">Search</button>
+    </div>
     <div id="calendar-month">
         <div id="calendar-month-prev">←</div>
         <div id="calendar-month-name"></div>
@@ -13,6 +21,23 @@
     <div id="calendar"></div>
 
     <style>
+        #guests {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            margin: 20px;
+            gap: 20px;
+        }
+
+        #guests .room {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
         #calendar-month {
             display: flex;
             flex-direction: row;
@@ -164,20 +189,29 @@
             let results = [];
 
             const startDate = new Date(year, month, 1);
-            const endDate = new Date(year, month + 1, 0);
+            const endDate = new Date(year, month + 1, 1);
             const now = Date.now();
+            const rooms = roomsData;
+
+            // YYYY-MM-DD
+            const dateFormatYmd = new Intl.DateTimeFormat('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            // console.log(dateFormatYmd.format(startDate).split('/').reverse().join('-'));
 
             // Create a new Headers object and set multiple headers
             const headers = new Headers();
             headers.append('StructureId', configs.structureId);
             headers.append('PortalId', configs.portalId);
             headers.append('offer', offerId);
+            headers.append('start', dateFormatYmd.format(startDate).split('/').reverse().join('-'));
+            headers.append('end', dateFormatYmd.format(endDate).split('/').reverse().join('-'));
+            headers.append('rooms', JSON.stringify(rooms)); 
+            console.log(JSON.stringify(rooms));
             // headers.append('UserLanguageCode', 'it');
 
             // Create the fetch options
             const requestOptions = {
-            method: 'GET',
-            headers: headers,
+                method: 'GET',
+                headers: headers,
             };
 
             // Make the fetch GET request with multiple headers
@@ -200,7 +234,11 @@
             let htmlCalendar = document.getElementById("calendar");
             htmlCalendar.innerHTML = printCalendar(new_month, new_year);
 
-            showOffers(new_month, new_year, offers, offerToShow, offerName);
+            // showOffers(new_month, new_year, offers, offerToShow, offerName);
+            getAllOffers(new_month, new_year, offerToShow).then(data => {
+                offers = data;
+                showOffers(new_month, new_year, offers, offerToShow, offerName);
+            });
 
             return [new_month, new_year];
         }
@@ -238,33 +276,56 @@
 
             for (let day = 1; day <= daysInMonth; day++) {
                 dateToCheck.setDate(day);
-
                 //format date as YYYY-MM-DD
-                const date = dateToCheck.toISOString().slice(0, 10);
+                const date = `${dateToCheck.getFullYear()}-${dateToCheck.getMonth() < 9 ? '0' : ''}${dateToCheck.getMonth() + 1}-${dateToCheck.getDate() <= 9 ? '0' : ''}${dateToCheck.getDate()}`;
                 // console.log("date", date);
                 if (offers[date]){
                     const offerDate = offers[date];
                     const htmlDay = document.getElementsByClassName(`day-${day}`);
                     htmlDay[0].classList.add("has-offer");
 
-                    let minStay = 0;
-                    let minPrice = 0;
+                    let minStay = 0; //calculate min stay
+                    let minPrice = 0; //calculate min price
+                    // console.log("offerDate", offerDate);
                     for (let offerRoom in offerDate) {
+                        const newMinStay = offerDate[offerRoom].min[0];
+                        if (newMinStay < minStay || minStay === 0)
+                            minStay = offerDate[offerRoom].min[0];
                         minStay = offerDate[offerRoom].min[0];
                         for (let price in offerDate[offerRoom].prices) {
                             // console.log("price", offerDate[offerRoom].prices[price]);
-                            minPrice = offerDate[offerRoom].prices[price];
-                            break;
+                            const newPrice = offerDate[offerRoom].prices[price];
+                            if (newPrice < minPrice || minPrice === 0)
+                                minPrice = offerDate[offerRoom].prices[price];
+                            // break;
                         }
-                        break;
+                        // break;
                     }
-                    // console.log("offerDate", minStay);
-                    $hrefLink = '';
 
-                    // htmlDay[0].innerHTML += `offer`;
-                    htmlDay[0].innerHTML += `
+                    //date formatted DD-MM-YYYY
+                    const dateFormatted = `${day <= 9 ? '0' : ''}${day}-${month < 9 ? '0' : ''}${month + 1}-${year}`;
+                    //next day date formatted DD-MM-YYYY with 2 chars
+                    const currentDate = new Date(year, month, day);
+                    currentDate.setDate(currentDate.getDate() + minStay);
+                    const nextDayFormatted = `${currentDate.getDate() <= 9 ? '0' : ''}${currentDate.getDate()}-${currentDate.getMonth() < 9 ? '0' : ''}${currentDate.getMonth() + 1}-${currentDate.getFullYear()}`;
+                    const numRooms = roomCounter;
+                    const reqRooms = roomsData;
+                    // console.log("reqRooms", reqRooms);
+                    let uriEncodedAdults = [];
+                    let uriEncodedChildren = [];
+                    for (let i = 0; i < numRooms; i++) {
+                        uriEncodedAdults.push(`bform%5BreqRooms%5D%5B${i + 1}%5D%5Badults%5D=${reqRooms[i].adults}`);
+                        uriEncodedChildren.push(`bform%5BreqRooms%5D%5B${i + 1}%5D%5Bchild%5D=${reqRooms[i].child}`);
+                    }
+                    const uriEncodedAdultsString = uriEncodedAdults.join("&");
+                    const uriEncodedChildrenString = uriEncodedChildren.join("&");
+                    // console.log("uriEncodedAdultsString", uriEncodedAdultsString);
+                    // console.log("uriEncodedChildrenString", uriEncodedChildrenString);
+                    const link = `${configs.booking}/indexabs.php?checkin=${dateFormatted}&checkout=${nextDayFormatted}&stid=${configs.structureId}&lg=${configs.language}&booking_type=R&step2=1&offerid=${requestedOffer}&hdr=1&ftr=1&style=https%3A%2F%2Fssl.marcovolpe.com%2Fcss%2Fhotel-atlantic.com-it.css&showmode=minisite&${uriEncodedAdultsString}&${uriEncodedChildrenString}&numRooms=${numRooms}&mobileoffertype=M`;
+
+                    htmlDay[0].querySelector('.data').innerHTML = `
                         <div class="offer">
-                            <a target="_blank" class="link" ${$hrefLink}">
+                            <a target="_blank" class="link" href="${link}">
                                 <div class="price">
                                     ${minPrice} €
                                 </div>
@@ -277,68 +338,11 @@
                             </a>
                         </div>
                     `;
+                } else {
+                    const htmlDay = document.getElementsByClassName(`day-${day}`);
+                    htmlDay[0].classList.remove("has-offer");
+                    htmlDay[0].querySelector('.data').innerHTML = "";
                 }
-
-                // const activeObjects = offers.filter(obj => {
-                //     const startDate = new Date(obj.validityStart);
-                //     const endDate = new Date(obj.validityEnd);
-
-                //     // TODO: check if offer is visible today?
-
-                //     // Check if dateToCheck is between startDate and endDate
-                //     return startDate <= dateToCheck && dateToCheck <= endDate && obj.id == requestedOffer;
-                // });
-
-                // if (activeObjects.length > 0) {
-                //     for (let i = 0; i < activeObjects.length; i++) {
-                //         const offer = activeObjects[i];
-                //         const shownOfferName = offerName != null ? offerName : offer.name;
-                //         const offerMinStay = offer.minstay;
-                //         const htmlDay = document.getElementsByClassName(`day-${day}`);
-                //         const isDateInPast = dateToCheck < new Date();
-
-                //         const shownDay = day;
-                //         const shownDayWithZero = shownDay < 10 ? "0" + shownDay : shownDay;
-                //         const shownMonth = month + 1;
-                //         const shownMonthWithZero = shownMonth < 10 ? "0" + shownMonth : shownMonth;
-
-                //         const daysToAdd = offerMinStay ? parseInt(offerMinStay) : 1;
-                //         const nextDay = (day + daysToAdd) % daysInMonth;
-                //         const hasGoneToNextMonth = nextDay != (day + daysToAdd);
-                //         const shownNextDayWithZero = nextDay < 10 ? "0" + nextDay : nextDay;
-                //         const nextDayMonth = hasGoneToNextMonth ? (shownMonth + 1) % 12 : shownMonth;
-                //         const shownNextDayMonthWithZero = nextDayMonth < 10 ? "0" + nextDayMonth : nextDayMonth;
-                //         const nextDayYear = nextDayMonth < month ? year + 1 : year;
-
-                //         const nextDayWithZero = nextDay < 10 ? "0" + nextDay : nextDay;
-                //         const nextDayMonthWithZero = nextDayMonth < 10 ? "0" + nextDayMonth : nextDayMonth;
-
-                //         //compose link
-                //         //https://volpe.abs-one.com/metis/indexabs.php?checkin=20-03-2023&checkout=21-03-2023&stid=6&lg=it&booking_type=R&step2=1&offerid=1294&hdr=1&ftr=1&style=https%3A%2F%2Fssl.marcovolpe.com%2Fcss%2Fhotel-atlantic.com-it.css&showmode=minisite&bform%5BreqRooms%5D%5B1%5D%5Badults%5D=2&bform%5BreqRooms%5D%5B1%5D%5Bchild%5D=0&numRooms=1
-                //         const dateCheckin = `${shownDayWithZero}-${shownMonthWithZero}-${year}`;
-                //         const dateCheckout = `${shownNextDayWithZero}-${shownNextDayMonthWithZero}-${nextDayYear}`;
-                //         const link = `${configs.booking}/indexabs.php?checkin=${dateCheckin}&checkout=${dateCheckout}&stid=${configs.structureId}&lg=${configs.language}&booking_type=R&step2=1&offerid=${offer.id}&hdr=1&ftr=1&style=https%3A%2F%2Fssl.marcovolpe.com%2Fcss%2Fhotel-atlantic.com-it.css&showmode=minisite&bform%5BreqRooms%5D%5B1%5D%5Badults%5D=2&bform%5BreqRooms%5D%5B1%5D%5Bchild%5D=0&numRooms=1&mobileoffertype=M`;
-
-                //         $hrefLink = isDateInPast ? '' : `href="${link}"`;
-
-                //         htmlDay[0].classList.add("has-offer");
-                //         htmlDay[0].innerHTML += `
-                //             <div class="offer">
-                //                 <a target="_blank" class="link" ${$hrefLink}">
-                //                     <div class="price">
-                //                         ${offer.price_from} €
-                //                     </div>
-                //                     <div class="minstay">
-                //                         min. ${offerMinStay} 
-                //                     </div>
-                //                     <div class="name">
-                //                         ${shownOfferName}
-                //                     </div>
-                //                 </a>
-                //             </div>
-                //         `;
-                //     }
-                // }
             }
         }
 
@@ -370,6 +374,8 @@
                         <div class='number'>
                             ${++dayIndex}
                         </div>
+                        <div class='data'>
+                        </div>
                     `;
                 }
                 html += `</div>`;
@@ -380,21 +386,70 @@
             return html;
         }
 
+        function addRoom() {
+            if (roomCounter < 4) {
+                const roomDiv = document.createElement('div');
+                roomDiv.innerHTML = `
+                    <h3>Room ${roomCounter + 1}</h3>
+                    <label>
+                        Adults:
+                        <input type="number" name="adults${roomCounter}" min="1" max="10" value="2">
+                    </label>
+                    <label>
+                        Children:
+                        <input type="number" name="children${roomCounter}" min="0" max="10" value="0">
+                    </label>
+                `;
+                document.getElementById('roomsContainer').appendChild(roomDiv);
+                roomCounter++;
+            } else {
+                // alert('Maximum 4 rooms are allowed');
+            }
+        }
+
+        function removeRoom() {
+            if (roomCounter > 1) {
+                document.getElementById('roomsContainer').removeChild(document.getElementById('roomsContainer').lastChild);
+                roomCounter--;
+                roomsData.pop();
+            } else {
+                // alert('At least 1 room is required');
+            }
+        }
+
+        function search() {
+            const formData = new FormData(document.getElementById('searchForm'));
+            roomsData = [];
+            for (let i = 0; i < roomCounter; i++) {
+                const adults = parseInt(formData.get(`adults${i}`), 10);
+                const children = parseInt(formData.get(`children${i}`), 10);
+                roomsData.push({'adults' : adults, 'child' : children});
+            }
+            // console.log(roomsData);
+            getAllOffers(month, year, offerToShow).then(data => {
+                console.log(data);
+                offers = data;
+                showOffers(month, year, offers, offerToShow, offerName);
+            });
+        }
+
         const offerToShow = configs.offerId;
         const offerName = configs.offerName;
         // init month and year as current month and year
         let month = new Date().getMonth();
         let year = new Date().getFullYear();
-        let offers = [];
+        let offers = {};
+        let roomCounter = 0;
+        let roomsData = [{'adults' : 2, 'child' : 0}];
         updateShownMonth(month, year);
+        addRoom();
 
         // show calendar
         let htmlCalendar = document.getElementById("calendar");
         htmlCalendar.innerHTML = printCalendar(month, year);
         getAllOffers(month, year, offerToShow).then(data => {
             offers = data;
-            // console.log(offers);
-            showOffers(month, year, data, offerToShow, offerName);
+            showOffers(month, year, offers, offerToShow, offerName);
         });
 
         // add event listeners
