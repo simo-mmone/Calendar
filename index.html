@@ -73,6 +73,32 @@
             padding: 10px;
         }
 
+        @keyframes spin {
+            from {transform: rotate(0deg);}
+            to {transform: rotate(360deg);}
+        }
+
+        .weekday.day{
+            position: relative;
+        }
+
+        .weekday.day.loading:after {
+            content: ' ';
+            /* background: red; */
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            top: 10px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            border: 5px solid #E0E0E0; /* Light grey */
+            border-top: 5px solid #424242; /* Blue */
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+        }
+
         .week .day .number{
             font-size: small;
             color: #212121;
@@ -130,7 +156,8 @@
 
         const configs = {
             'booking': 'https://volpe.abs-one.com/metis',
-            'host': 'https://volpe.abs-one.com',
+            'host': 'https://volpe.abs-one.com', //prod
+            // 'host': 'https://reservation.abs.tmp', //dev
             'language': 'it',
             'structureId': 6,
             'portalId': 1,
@@ -205,7 +232,7 @@
             headers.append('start', dateFormatYmd.format(startDate).split('/').reverse().join('-'));
             headers.append('end', dateFormatYmd.format(endDate).split('/').reverse().join('-'));
             headers.append('rooms', JSON.stringify(rooms)); 
-            console.log(JSON.stringify(rooms));
+            // console.log(JSON.stringify(rooms));
             // headers.append('UserLanguageCode', 'it');
 
             // Create the fetch options
@@ -214,8 +241,10 @@
                 headers: headers,
             };
 
+            showLoading(month, year);
+
             // Make the fetch GET request with multiple headers
-            const resp = await fetch(`${configs.host}/RESTfulAPI/booking/offers`, requestOptions);
+            const resp = await fetch(`${configs.host}/RESTfulAPI/booking/offerprices`, requestOptions);
             if (!resp.ok) {
                 console.log(`HTTP error! Status: ${resp.status}`);
                 return [];
@@ -279,28 +308,15 @@
                 //format date as YYYY-MM-DD
                 const date = `${dateToCheck.getFullYear()}-${dateToCheck.getMonth() < 9 ? '0' : ''}${dateToCheck.getMonth() + 1}-${dateToCheck.getDate() <= 9 ? '0' : ''}${dateToCheck.getDate()}`;
                 // console.log("date", date);
+                const htmlDay = document.getElementsByClassName(`day-${day}`);
+                htmlDay[0].classList.remove("loading");
                 if (offers[date]){
-                    const offerDate = offers[date];
-                    const htmlDay = document.getElementsByClassName(`day-${day}`);
                     htmlDay[0].classList.add("has-offer");
-
-                    let minStay = 0; //calculate min stay
-                    let minPrice = 0; //calculate min price
+                    const offerDate = offers[date];
                     // console.log("offerDate", offerDate);
-                    for (let offerRoom in offerDate) {
-                        const newMinStay = offerDate[offerRoom].min[0];
-                        if (newMinStay < minStay || minStay === 0)
-                            minStay = offerDate[offerRoom].min[0];
-                        minStay = offerDate[offerRoom].min[0];
-                        for (let price in offerDate[offerRoom].prices) {
-                            // console.log("price", offerDate[offerRoom].prices[price]);
-                            const newPrice = offerDate[offerRoom].prices[price];
-                            if (newPrice < minPrice || minPrice === 0)
-                                minPrice = offerDate[offerRoom].prices[price];
-                            // break;
-                        }
-                        // break;
-                    }
+
+                    let minStay = offerDate['minstay']; //calculate min stay
+                    let minPrice = offerDate['price']; //calculate min price
 
                     //date formatted DD-MM-YYYY
                     const dateFormatted = `${day <= 9 ? '0' : ''}${day}-${month < 9 ? '0' : ''}${month + 1}-${year}`;
@@ -316,6 +332,10 @@
                     for (let i = 0; i < numRooms; i++) {
                         uriEncodedAdults.push(`bform%5BreqRooms%5D%5B${i + 1}%5D%5Badults%5D=${reqRooms[i].adults}`);
                         uriEncodedChildren.push(`bform%5BreqRooms%5D%5B${i + 1}%5D%5Bchild%5D=${reqRooms[i].child}`);
+                        for (let j = 0; j < reqRooms[i].child; j++) {
+                            //bform%5BreqRooms%5D%5B1%5D%5BchildAge%5D%5B1%5D=0
+                            uriEncodedChildren.push(`bform%5BreqRooms%5D%5B${i + 1}%5D%5BchildAge%5D%5B${j + 1}%5D=0`);
+                        }
                     }
                     const uriEncodedAdultsString = uriEncodedAdults.join("&");
                     const uriEncodedChildrenString = uriEncodedChildren.join("&");
@@ -417,6 +437,14 @@
             }
         }
 
+        function showLoading(month, year) {
+            let daysInMonth = daysInThisMonth(new Date(year, month));
+            for (index = 0; index < daysInMonth; index++){
+                let dayHtml = document.getElementsByClassName(`day-${index + 1}`);
+                dayHtml[0].classList.add("loading");
+            }
+        }
+
         function search() {
             const formData = new FormData(document.getElementById('searchForm'));
             roomsData = [];
@@ -427,7 +455,7 @@
             }
             // console.log(roomsData);
             getAllOffers(month, year, offerToShow).then(data => {
-                console.log(data);
+                // console.log(data);
                 offers = data;
                 showOffers(month, year, offers, offerToShow, offerName);
             });
@@ -447,6 +475,7 @@
         // show calendar
         let htmlCalendar = document.getElementById("calendar");
         htmlCalendar.innerHTML = printCalendar(month, year);
+        showLoading(month, year);
         getAllOffers(month, year, offerToShow).then(data => {
             offers = data;
             showOffers(month, year, offers, offerToShow, offerName);
