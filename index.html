@@ -6,12 +6,28 @@
 
 <body>
     <div id="guests">
-        <form id="searchForm">
-            <div id="roomsContainer"></div>
-        </form>
-        <button type="button" onclick="addRoom()">Add Room</button>
-        <button type="button" onclick="removeRoom()">Remove Room</button>
-        <button type="button" onclick="search()">Search</button>
+        <div>Ospiti:</div>
+        <div id="guests-recap-btn" class="title-guests" onclick="showHideGuests(this)">2 ospiti, 1 camera</div>
+        <div class="rooms-container hidden" id="guests-container">
+            <form id="searchForm">
+                <div id="roomsContainer"></div>
+            </form>
+            <div class="button-plus" onclick="addRoom()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-plus">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>                  
+                Aggiungi stanza
+            </div>
+            <div class="button-minus" onclick="removeRoom()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-minus">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>                  
+                Rimuovi stanza
+            </div>
+            <button type="button" class="update-guests" onclick="search()">
+                Aggiorna
+            </button>
+        </div>
     </div>
     <div id="calendar-month">
         <div id="calendar-month-prev">←</div>
@@ -29,8 +45,87 @@
             flex-direction: row;
             justify-content: center;
             align-items: center;
-            margin: 20px;
+            margin: auto;
+            margin-top: 20px;
+            margin-bottom: 20px;
             gap: 20px;
+            position: relative;
+            max-width: fit-content;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        #guests #guests-recap-btn{
+            border-radius: 5px;
+            border: 1px solid #0D47A1;
+            padding: 8px 12px;
+            color: #0D47A1;
+            cursor: pointer;
+
+        }
+
+        #guests .icon-minus,
+        #guests .icon-plus {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+        }
+
+        #guests .button-plus,
+        #guests .button-minus{
+            border: none;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            color: #0D47A1;
+        }
+
+        #guests .update-guests{
+            display: flex;
+            margin-left: auto;
+            border: 1px solid #0D47A1;
+            border-radius: 5px;
+            padding: 8px 12px;
+            background-color: #0D47A1;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        #guests #guests-container{
+            z-index: 3;
+        }
+
+        #guests .rooms-container{
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 300px;
+            background: white;
+            border: 1px solid #fafafa;
+            border-radius: 3px;
+            padding: 10px;
+            /* shadow */
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        /* arrow up */
+        #guests .rooms-container::before{
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 40%;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid white;
+        }
+
+        #guests .rooms-container.hidden { 
+            display: none;
+        }
+
+        #roomsContainer{
+            color: black;
         }
 
         #calendar{
@@ -216,6 +311,10 @@
             #calendar-month-next svg {
                 width: 20px;
                 height: 20px;
+            }
+
+            #guests .rooms-container{
+                width: 100%;
             }
 
             .weekday {
@@ -462,7 +561,8 @@
                 // console.log("date", date);
                 const htmlDay = document.getElementsByClassName(`day-${day}`);
                 htmlDay[0].classList.remove("loading");
-                htmlDay[0].removeEventListener("click", function() {});
+                //remove all click listeners
+                htmlDay[0].replaceWith(htmlDay[0].cloneNode(true));
                 if (offers[date]){
                     htmlDay[0].classList.add("has-offer");
                     const offerDate = offers[date];
@@ -503,7 +603,7 @@
                                     ${minPrice} €
                                 </div>
                                 <div class="minstay">
-                                    prezzo per ${minStay} notte/i
+                                    prezzo per ${minStay} ${minStay > 1 ? 'notti' : 'notte'}
                                 </div>
                                 <div class="name">
                                     ${offerName}
@@ -568,14 +668,14 @@
             if (roomCounter < 4) {
                 const roomDiv = document.createElement('div');
                 roomDiv.innerHTML = `
-                    <h3>Room ${roomCounter + 1}</h3>
+                    <h3>Stanza ${roomCounter + 1}</h3>
                     <label>
-                        Adults:
-                        <input type="number" name="adults${roomCounter}" min="1" max="10" value="2">
+                        Adulti:
+                        <input type="number" class="input-guests" name="adults${roomCounter}" min="1" max="10" value="2">
                     </label>
                     <label>
-                        Children:
-                        <input type="number" name="children${roomCounter}" min="0" max="10" value="0">
+                        Bambini:
+                        <input type="number" class="input-guests" name="children${roomCounter}" min="0" max="10" value="0">
                     </label>
                 `;
                 document.getElementById('roomsContainer').appendChild(roomDiv);
@@ -606,17 +706,51 @@
         function search() {
             const formData = new FormData(document.getElementById('searchForm'));
             roomsData = [];
+            let totaleGuests = 0;
+            let totalRooms = 0;
             for (let i = 0; i < roomCounter; i++) {
                 const adults = parseInt(formData.get(`adults${i}`), 10);
                 const children = parseInt(formData.get(`children${i}`), 10);
+                totaleGuests += adults + children;
+                totalRooms += 1;
                 roomsData.push({'adults' : adults, 'child' : children});
             }
+            let guestsRecapBtn = document.getElementById('guests-recap-btn');
+            guestsRecapBtn.innerHTML = `${totaleGuests} ${totaleGuests > 1 ? 'ospiti' : 'ospite'}, ${totalRooms} ${totalRooms > 1 ? 'camere' : 'camera'}`;
             // console.log(roomsData);
             getAllOffers(month, year, offerToShow).then(data => {
                 // console.log(data);
                 offers = data;
                 showOffers(month, year, offers, offerToShow, offerName);
             });
+        }
+
+        function hideGuests(e) {
+            if (
+                    (e.target.className == 'update-guests' ) ||
+                    (
+                        e.target.id !== 'guests-container' &&
+                        e.target.id !== 'guests' &&
+                        e.target.className !== 'title-guests' &&
+                        // check if the click is not inside the guests container
+                        !document.getElementById('guests-container').contains(e.target)
+                    )
+                ) {
+                let guestsContainer = document.getElementById('guests-container');
+                guestsContainer.classList.add('hidden');
+                document.removeEventListener('click', hideGuests);
+            }
+        }
+
+        function showHideGuests() {
+            let guestsContainer = document.getElementById('guests-container');
+            let show = guestsContainer.classList.contains('hidden');
+            guestsContainer.classList.toggle('hidden');
+            if (show) {
+                document.addEventListener('click', hideGuests);
+            } else {
+                document.removeEventListener('click', hideGuests);
+            }
         }
 
         const offerToShow = configs.offerId;
