@@ -77,6 +77,7 @@
             justify-content: flex-start;
             align-items: center;
             color: #0D47A1;
+            margin-top: 10px;
         }
 
         #guests .update-guests{
@@ -126,6 +127,27 @@
 
         #roomsContainer{
             color: black;
+        }
+
+        #roomsContainer .room-row{
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        #roomsContainer .room-row label{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #roomsContainer .room-row input{
+            display: none;            
+        }
+
+        #roomsContainer .room-row svg{
+            color: #1565C0;;
         }
 
         #calendar{
@@ -313,8 +335,14 @@
                 height: 20px;
             }
 
+            #guests {
+                max-width: 100%
+            }
+
             #guests .rooms-container{
-                width: 100%;
+                width: auto;
+                left: 0;
+                right: 0;
             }
 
             .weekday {
@@ -664,19 +692,61 @@
             return html;
         }
 
+        const svgAdd = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-plus" onclick="addToInput(this)">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        `;
+
+        const svgRemove = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-minus" onclick="removeFromInput(this)">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        `;
+
+        function removeFromInput(el) {
+            const input = el.parentNode.getElementsByTagName('input')[0];
+            const shownVal = el.parentNode.getElementsByClassName('input-val')[0];
+            let newVal = parseInt(input.value) - 1;
+            let minVal = parseInt(input.min);
+            if (newVal >= minVal) {
+                input.value = newVal;
+                shownVal.innerHTML = newVal;
+            }
+        }
+
+        function addToInput(el) {
+            const input = el.parentNode.getElementsByTagName('input')[0];
+            const shownVal = el.parentNode.getElementsByClassName('input-val')[0];
+            let newVal = parseInt(input.value) + 1;
+            let maxVal = parseInt(input.max);
+            if (newVal <= maxVal) {
+                input.value = newVal;
+                shownVal.innerHTML = newVal;
+            }
+        }
+
         function addRoom() {
             if (roomCounter < 4) {
                 const roomDiv = document.createElement('div');
                 roomDiv.innerHTML = `
                     <h3>Stanza ${roomCounter + 1}</h3>
-                    <label>
-                        Adulti:
-                        <input type="number" class="input-guests" name="adults${roomCounter}" min="1" max="10" value="2">
-                    </label>
-                    <label>
-                        Bambini:
-                        <input type="number" class="input-guests" name="children${roomCounter}" min="0" max="10" value="0">
-                    </label>
+                    <div class="room-row">
+                        <label>
+                            Adulti:
+                            ${svgAdd}
+                            <input type="number" class="input-guests hidden" name="adults${roomCounter}" min="1" max="10" value="2">
+                            <div class="input-val">2</div>
+                            ${svgRemove}
+                        </label>
+                        <label>
+                            Bambini:
+                            ${svgAdd}
+                            <input type="number" class="input-guests hidden" name="children${roomCounter}" min="0" max="10" value="0">
+                            <div class="input-val">0</div>
+                            ${svgRemove}
+                        </label>
+                    </div>
                 `;
                 document.getElementById('roomsContainer').appendChild(roomDiv);
                 roomCounter++;
