@@ -20,6 +20,9 @@
     </div>
     <div id="calendar"></div>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         #guests {
             display: flex;
@@ -28,6 +31,11 @@
             align-items: center;
             margin: 20px;
             gap: 20px;
+        }
+
+        #calendar{
+            max-width: 1200px;
+            margin: auto;
         }
 
         #guests .room {
@@ -43,18 +51,38 @@
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            margin: 20px;
+            padding-top: 20px;
+            padding-bottom: 20px;
+            max-width: 1200px;
+            margin: auto;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        #calendar-month-name {
+            font-size: 36px;
+            font-weight: 700;
         }
 
         #calendar-month-prev,
         #calendar-month-next {
             cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 26px;
+        }
+
+        #calendar-month-prev svg,
+        #calendar-month-next svg {
+            width: 30px;
+            height: 30px;
         }
 
         .week {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
+            font-family: 'Roboto', sans-serif;
         }
 
         .week.mobile {
@@ -64,13 +92,65 @@
         .weekday {
             width: calc(100% / 7);
             min-height: 90px;
-            border: 1px solid black;
+            border-left: 1px solid #EEEEEE;
+            border-top: 1px solid #EEEEEE;
             text-align: center;
-            font-weight: bold;
+            font-weight: 500;
             display: flex;
             flex-direction: column;
             justify-content: start;
             padding: 10px;
+        }
+
+        .week .day:hover{
+            background-color: #1565C0;
+        }
+
+        .week .has-offer:hover {
+            cursor: pointer;
+        }
+
+        .week .day:hover .number {
+            color: white;
+        }
+
+        .weekday:nth-child(7) {
+            border-right: 1px solid #EEEEEE;
+        }
+
+        .week:last-child .weekday {
+            border-bottom: 1px solid #EEEEEE;
+        }
+
+        .weekday.name {
+            min-height: 40px;
+        }
+
+        .weekday .number{
+            display: flex;
+        }
+
+        .weekday .offer .price {
+            font-weight: 700;
+            font-size: 24px;
+            color: #0D47A1;
+        }
+
+        .weekday .offer .minstay {
+            font-size: small;
+            color: #424242;
+        }
+
+        .weekday .offer .name {
+            font-size: small;
+            font-weight: 500;
+            color: #212121;
+        }
+
+        .week .day:hover .price,
+        .week .day:hover .minstay,
+        .week .day:hover .name {
+            color: white;
         }
 
         @keyframes spin {
@@ -109,12 +189,7 @@
             display: flex;
             flex-direction: column;
             text-decoration: none;
-            gap: 10px;
-        }
-
-        .week .day .offer .link .name {
-            font-weight: bold;
-            color: #212121;
+            /* gap: 10px; */
         }
 
         .week .day .offer .info {
@@ -127,14 +202,50 @@
         }
 
         @media screen and (max-width: 1040px) {
+            #calendar-month-name {
+                font-size: 24px;
+                font-weight: 500;
+            }
+
+            #calendar-month-prev,
+            #calendar-month-next {
+                font-size: 16px;
+            }
+
+            #calendar-month-prev svg,
+            #calendar-month-next svg {
+                width: 20px;
+                height: 20px;
+            }
+
             .weekday {
                 /* border: none; */
                 min-height: 50px;
                 justify-content: center;
                 padding: 0;
+                padding-top: 10px;
+                padding-bottom: 10px;
+                justify-content: flex-start;
+                align-items: center;
+                gap: 10px;
             }
 
-            .offer {
+            .weekday.day.loading:after {
+                width: 20px;
+                height: 20px;
+                border: 2px solid #E0E0E0;
+                border-top: 2px solid #424242;
+            }
+
+            /* .offer {
+                display: none;
+            } */
+
+            .offer .minstay {
+                display: none;
+            }
+
+            .offer .name {
                 display: none;
             }
 
@@ -146,8 +257,18 @@
                 display: flex;
             }
 
-            .weekday.has-offer {
-                background-color: greenyellow;
+            .weekday .offer .price {
+                font-weight: 400;
+                font-size: 14px;
+                color: #0D47A1;
+            }
+
+            .week .day .offer .link{
+                margin: 0px;
+            }
+
+            .week .day .number {
+                font-size: 16px;
             }
         }
     </style>
@@ -164,6 +285,33 @@
             'offerId': 1294,
             'offerName': 'Blue Days'
         };
+
+        const months = [
+            'gennaio',
+            'febbraio',
+            'marzo',
+            'aprile',
+            'maggio',
+            'giugno',
+            'luglio',
+            'agosto',
+            'settembre',
+            'ottobre',
+            'novembre',
+            'dicembre'
+        ];
+
+        const svgLeft = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+        `;
+
+        const svgRight = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+        `;
 
         function findGetParameter(parameterName) {
             var result = null,
@@ -208,7 +356,11 @@
 
         function updateShownMonth(month, year) {
             let htmlMonthName = document.getElementById("calendar-month-name");
-            htmlMonthName.innerHTML = `${month + 1}/${year}`;
+            htmlMonthName.innerHTML = `${months[month]} ${year}`;
+            let htmlPrevMonth = document.getElementById("calendar-month-prev");
+            htmlPrevMonth.innerHTML = `${svgLeft} ${months[decreaseMonth(month, year)[0]]}`;
+            let htmlNextMonth = document.getElementById("calendar-month-next");
+            htmlNextMonth.innerHTML = `${months[increaseMonth(month, year)[0]]} ${svgRight}`;
         }        
 
         async function getAllOffers(month, year, offerId) {
@@ -290,7 +442,7 @@
             for (let i = 0; i < 7; i++) {
                 html += `
                     <div class="weekday name">
-                        ${weekdays[weekdaysindex++ % 7].charAt(0)}
+                        ${weekdays[weekdaysindex++ % 7].substring(0, 3)}
                     </div>
                 `;
             }
@@ -310,6 +462,7 @@
                 // console.log("date", date);
                 const htmlDay = document.getElementsByClassName(`day-${day}`);
                 htmlDay[0].classList.remove("loading");
+                htmlDay[0].removeEventListener("click", function() {});
                 if (offers[date]){
                     htmlDay[0].classList.add("has-offer");
                     const offerDate = offers[date];
@@ -350,7 +503,7 @@
                                     ${minPrice} €
                                 </div>
                                 <div class="minstay">
-                                    min. ${minStay} nights
+                                    prezzo per ${minStay} notte/i
                                 </div>
                                 <div class="name">
                                     ${offerName}
@@ -358,6 +511,11 @@
                             </a>
                         </div>
                     `;
+                    // add click listener
+                    htmlDay[0].addEventListener("click", function () {
+                        window.open(link, '_blank');
+                    });
+
                 } else {
                     const htmlDay = document.getElementsByClassName(`day-${day}`);
                     htmlDay[0].classList.remove("has-offer");
@@ -369,7 +527,7 @@
         function printCalendar(month, year) {
             let html = "";
             let daysInMonth = daysInThisMonth(new Date(year, month));
-            let weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            let weekdays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
             let dayIndex = 0;
             const dateToCheck = new Date(year, month - 1);
 
