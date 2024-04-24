@@ -6,7 +6,7 @@
 
 <body>
     <div id="guests">
-        <div>Ospiti:</div>
+        <div id="label-guests">Ospiti:</div>
         <div id="guests-recap-btn" class="title-guests" onclick="showHideGuests(this)">2 ospiti, 1 camera</div>
         <div class="rooms-container hidden" id="guests-container">
             <form id="searchForm">
@@ -15,17 +15,17 @@
             <div class="button-plus" onclick="addRoom()">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-plus">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>                  
-                Aggiungi stanza
+                </svg>
+                <div id="label-add-room">Aggiungi stanza</div>
             </div>
             <div class="button-minus" onclick="removeRoom()">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-minus">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>                  
-                Rimuovi stanza
+                <div id="label-remove-room">Rimuovi stanza</div>
             </div>
             <button type="button" class="update-guests" onclick="search()">
-                Aggiorna
+                <div id="label-update">Aggiorna</div>
             </button>
         </div>
     </div>
@@ -68,6 +68,7 @@
             width: 20px;
             height: 20px;
             margin-right: 5px;
+            cursor: pointer;
         }
 
         #guests .button-plus,
@@ -78,6 +79,7 @@
             align-items: center;
             color: #0D47A1;
             margin-top: 10px;
+            cursor: pointer;
         }
 
         #guests .update-guests{
@@ -421,19 +423,20 @@
 
         const stid = findGetParameter('stid');
         const offerId = findGetParameter('offerId');
+        const lang = findGetParameter('lang') ?? 'it';
 
         const configs = {
             'booking': 'https://volpe.abs-one.com/metis',
             'host': 'https://volpe.abs-one.com', //prod
             // 'host': 'https://reservation.abs.tmp', //dev
-            'language': 'it',
+            'language': lang,
             'structureId': stid ?? 6,
             'portalId': 1,
             'offerId': offerId ?? 1294,
             'offerName': 'Blue Days'
         };
 
-        const months = [
+        const monthsIta = [
             'gennaio',
             'febbraio',
             'marzo',
@@ -447,6 +450,23 @@
             'novembre',
             'dicembre'
         ];
+
+        const monthsEng = [
+            'january',
+            'february',
+            'march',
+            'april',
+            'may',
+            'june',
+            'july',
+            'august',
+            'september',
+            'october',
+            'november',
+            'december'
+        ];
+
+        const months = configs.language == 'en' ? monthsEng : monthsIta;
 
         const svgLeft = `
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -644,6 +664,9 @@
                     // console.log("uriEncodedChildrenString", uriEncodedChildrenString);
                     const link = `${configs.booking}/indexabs.php?checkin=${dateFormatted}&checkout=${nextDayFormatted}&stid=${configs.structureId}&lg=${configs.language}&booking_type=R&step2=1&offerid=${requestedOffer}&hdr=1&ftr=1&style=https%3A%2F%2Fssl.marcovolpe.com%2Fcss%2Fhotel-atlantic.com-it.css&showmode=minisite&${uriEncodedAdultsString}&${uriEncodedChildrenString}&numRooms=${numRooms}&mobileoffertype=M`;
 
+                    const labelPriceFor = configs.language == 'en' ? 'price for' : 'prezzo per';
+                    const labelNights = configs.language == 'en' ? (minStay > 1 ? 'nights' : 'night') : (minStay > 1 ? 'notti' : 'notte');
+
                     htmlDay[0].querySelector('.data').innerHTML = `
                         <div class="offer">
                             <a target="_blank" class="link" href="${link}">
@@ -651,7 +674,7 @@
                                     ${minPrice} €
                                 </div>
                                 <div class="minstay">
-                                    prezzo per ${minStay} ${minStay > 1 ? 'notti' : 'notte'}
+                                    ${labelPriceFor} ${minStay} ${labelNights}
                                 </div>
                                 <div class="name">
                                     ${offerName}
@@ -676,6 +699,9 @@
             let html = "";
             let daysInMonth = daysInThisMonth(new Date(year, month));
             let weekdays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+            if (configs.language == 'en') {
+                weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            }
             let dayIndex = 0;
             const dateToCheck = new Date(year, month - 1);
 
@@ -747,20 +773,23 @@
         }
 
         function addRoom() {
+            const labelRoom = configs.language == 'en' ? 'Room' : 'Stanza';
+            const labelAduts = configs.language == 'en' ? 'Adults' : 'Adulti';
+            const labelChildren = configs.language == 'en' ? 'Children' : 'Bambini';
             if (roomCounter < 4) {
                 const roomDiv = document.createElement('div');
                 roomDiv.innerHTML = `
-                    <h3>Stanza ${roomCounter + 1}</h3>
+                    <h3>${labelRoom} ${roomCounter + 1}</h3>
                     <div class="room-row">
                         <label>
-                            Adulti:
+                            ${labelAduts}:
                             ${svgAdd}
                             <input type="number" class="input-guests hidden" name="adults${roomCounter}" min="1" max="10" value="2">
                             <div class="input-val">2</div>
                             ${svgRemove}
                         </label>
                         <label>
-                            Bambini:
+                            ${labelChildren}:
                             ${svgAdd}
                             <input type="number" class="input-guests hidden" name="children${roomCounter}" min="0" max="10" value="0">
                             <div class="input-val">0</div>
@@ -806,7 +835,9 @@
                 roomsData.push({'adults' : adults, 'child' : children});
             }
             let guestsRecapBtn = document.getElementById('guests-recap-btn');
-            guestsRecapBtn.innerHTML = `${totaleGuests} ${totaleGuests > 1 ? 'ospiti' : 'ospite'}, ${totalRooms} ${totalRooms > 1 ? 'camere' : 'camera'}`;
+            const labelGuests = configs.language == 'en' ? (totaleGuests > 1 ? 'guests' : 'guest') : (totaleGuests > 1 ? 'ospiti' : 'ospite');
+            const labelRooms = configs.language == 'en' ? (totalRooms > 1 ? 'rooms' : 'room') : (totalRooms > 1 ? 'camere' : 'camera');
+            guestsRecapBtn.innerHTML = `${totaleGuests} ${labelGuests}, ${totalRooms} ${labelRooms}`;
             // console.log(roomsData);
             getAllOffers(month, year, offerToShow).then(data => {
                 // console.log(data);
@@ -842,6 +873,24 @@
                 document.removeEventListener('click', hideGuests);
             }
         }
+
+        function translateLabels() {
+            const labelGuests = document.getElementById('label-guests');
+            const labelAddRoom = document.getElementById('label-add-room');
+            const labelRemoveRoom = document.getElementById('label-remove-room');
+            const labelUpdate = document.getElementById('label-update');
+            const guestsRecapBtn = document.getElementById('guests-recap-btn');
+
+            if (configs.language == 'en') {
+                labelGuests.innerHTML = 'Guests:';
+                labelAddRoom.innerHTML = 'Add room';
+                labelRemoveRoom.innerHTML = 'Remove room';
+                labelUpdate.innerHTML = 'Update';
+                guestsRecapBtn.innerHTML = '2 guests, 1 room';
+            }
+        }
+
+        translateLabels();
 
         const offerToShow = configs.offerId;
         const offerName = configs.offerName;
